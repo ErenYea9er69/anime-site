@@ -37,7 +37,7 @@ export function AnimeDetails({ anime }: { anime: Anime }) {
             <h1 className="text-4xl font-bold">
               {anime.title.english || anime.title.romaji}
             </h1>
-            
+
             <div className="flex flex-wrap gap-2">
               {anime.genres?.map((genre) => (
                 <Badge key={genre} variant="secondary">
@@ -49,7 +49,11 @@ export function AnimeDetails({ anime }: { anime: Anime }) {
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center">
                 <Star className="mr-1 h-4 w-4 text-yellow-500" />
-                <span>{anime.averageScore ? (anime.averageScore / 10).toFixed(1) : "N/A"}</span>
+                <span>
+                  {anime.averageScore
+                    ? (anime.averageScore / 10).toFixed(1)
+                    : "N/A"}
+                </span>
               </div>
               <div>{anime.format}</div>
               <div>{anime.episodes} Episodes</div>
@@ -67,18 +71,24 @@ export function AnimeDetails({ anime }: { anime: Anime }) {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <h4 className="text-sm font-medium text-muted-foreground">Status</h4>
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  Status
+                </h4>
                 <p className="text-sm">{anime.status}</p>
               </div>
               {anime.season && (
                 <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Season</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">
+                    Season
+                  </h4>
                   <p className="text-sm">{`${anime.season} ${anime.seasonYear}`}</p>
                 </div>
               )}
               {anime.studios?.nodes && anime.studios.nodes.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-muted-foreground">Studio</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">
+                    Studio
+                  </h4>
                   <p className="text-sm">{anime.studios.nodes[0].name}</p>
                 </div>
               )}
