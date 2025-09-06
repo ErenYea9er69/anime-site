@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model ImageCache {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  type      String   
+  animeId   Int
+  blob      Bytes    
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([animeId])
+}
+
+model EpisodeCache {
+  id          String   @id @default(cuid())
+  animeId     Int
+  episode     Int
+  sources     Json     
+  subtitles   Json?    
+  quality     String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([animeId, episode])
+}
+
+model UserProfile {
+  id               String             @id @default(cuid())
+  name             String             @unique
+  setting          Json?
+  WatchListEpisode WatchListEpisode[]
+}
+
+model WatchListEpisode {
+  id            String      @id @default(cuid())
+  aniId         String?
+  title         String?
+  aniTitle      String?
+  image         String?
+  episode       Int?
+  timeWatched   Int?
+  duration      Int?
+  provider      String?
+  nextId        String?
+  nextNumber    Int?
+  dub           Boolean?
+  createdDate   DateTime?   @default(now())
+  userProfile   UserProfile @relation(fields: [userProfileId], references: [name], onDelete: Cascade)
+  userProfileId String
+  watchId       String
+}
