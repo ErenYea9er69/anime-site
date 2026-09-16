@@ -3,11 +3,11 @@ import ProviderCache from './cache';
 import Zoro from '@consumet/extensions/dist/providers/anime/zoro';
 import axios from 'axios';
 import { getCacheId, proxyRequest  } from '../utils';
+import { CONSUMET_API_URL } from '@/constants/utils';
+import { NextApiRequest, NextApiResponse } from 'next';
 
 const cache = new ProviderCache();
 const consumet = new Zoro();
-const apiUrl = 'https://apiconsumet-gamma.vercel.app';
-import { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { type, query, episode } = req.query
@@ -24,10 +24,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     case 'sources':
       const servers = ["vidstreaming", "vidcloud", "streamsb", "streamtape"];
       const sourcesPromises = servers.map(server => 
-        proxyRequest(`${apiUrl}/anime/zoro/watch/${query}?server=${server}`)
+        proxyRequest(`${CONSUMET_API_URL}/anime/zoro/watch/${query}?server=${server}`).catch(() => null)
       );
-      const sourcesResponses = await Promise.all(sourcesPromises);
-      const allSources = sourcesResponses.map(response => response.data);
+      const sourcesResponses = (await Promise.all(sourcesPromises)).filter(Boolean);
+      const allSources = sourcesResponses.map(response => response?.data);
       return res.status(200).json(allSources)
   }
 }
@@ -89,10 +89,11 @@ async function searchEpisodeUrl(
       try {
         const servers = ["vidstreaming", "vidcloud", "streamsb", "streamtape"];
         const sourcesPromises = servers.map(server => 
-          proxyRequest(`${apiUrl}/anime/zoro/watch/${animeEpisodeId}?server=${server}`)
+          proxyRequest(`${CONSUMET_API_URL}/anime/zoro/watch/${animeEpisodeId}?server=${server}`).catch(() => null)
         );
-        const sourcesResponses = await Promise.all(sourcesPromises);
+        const sourcesResponses = (await Promise.all(sourcesPromises)).filter(Boolean);
         const allSources = sourcesResponses.flatMap(response => {
+          if (!response?.data?.sources || !Array.isArray(response.data.sources)) return [];
           return response.data.sources.map((value: any) => {
             value.tracks = response.data.subtitles;
             value.skipEvents = {
@@ -102,7 +103,7 @@ async function searchEpisodeUrl(
             return value;
           });
         });
-        return (cache.search[cacheId] = allSources ?? null);
+        return (cache.search[cacheId] = allSources.length > 0 ? allSources : null);
       } catch (error) {
         console.error('Failed to fetch sources:', error);
         return null;

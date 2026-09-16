@@ -2,6 +2,7 @@ import { IVideo } from '@consumet/extensions';
 import Gogoanime from '@consumet/extensions/dist/providers/anime/gogoanime';
 import ProviderCache from './cache';
 import { getCacheId, proxyRequest } from '../utils';
+import { CONSUMET_API_URL } from '@/constants/utils';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 const cache = new ProviderCache();
@@ -69,9 +70,9 @@ async function searchEpisodeUrl(
       if (animeEpisodeId) {
         // Request all qualities
         const [gogocdn, streamsb, vidstreaming] = await Promise.all([
-          proxyRequest(`https://apiconsumet-gamma.vercel.app/anime/gogoanime/watch/${animeEpisodeId}?server=gogocdn`),
-          proxyRequest(`https://apiconsumet-gamma.vercel.app/anime/gogoanime/watch/${animeEpisodeId}?server=streamsb`),
-          proxyRequest(`https://apiconsumet-gamma.vercel.app/anime/gogoanime/watch/${animeEpisodeId}?server=vidstreaming`)
+          proxyRequest(`${CONSUMET_API_URL}/anime/gogoanime/watch/${animeEpisodeId}?server=gogocdn`).catch(() => null),
+          proxyRequest(`${CONSUMET_API_URL}/anime/gogoanime/watch/${animeEpisodeId}?server=streamsb`).catch(() => null),
+          proxyRequest(`${CONSUMET_API_URL}/anime/gogoanime/watch/${animeEpisodeId}?server=vidstreaming`).catch(() => null)
         ]);
 
         const sources = [
@@ -111,8 +112,12 @@ export const getAnimeId = async (
     return cache.animeIds[animeSearch];
 
   const data = await proxyRequest(
-    `https://apiconsumet-gamma.vercel.app/anime/gogoanime/${encodeURIComponent(animeSearch)}?page=1`
-  );
+    `${CONSUMET_API_URL}/anime/gogoanime/${encodeURIComponent(animeSearch)}?page=1`
+  ).catch(() => null);
+
+  if (!data?.results || !Array.isArray(data.results)) {
+    return (cache.animeIds[animeSearch] = null);
+  }
 
   const filteredResults = data.results.filter((result: { title: string; }) =>
     dubbed
@@ -149,9 +154,10 @@ export const getAnimeEpisodeId = async (
   }
 
   const data = await proxyRequest(
-    `https://apiconsumet-gamma.vercel.app/anime/gogoanime/info/${encodeURIComponent(animeId)}`
-  );
+    `${CONSUMET_API_URL}/anime/gogoanime/info/${encodeURIComponent(animeId)}`
+  ).catch(() => null);
+
   return (
     cache.episodes[animeId] = data?.episodes
   )?.find((ep: { number: number; }) => ep.number == episode)?.id ?? null;
-};
+};
