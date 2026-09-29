@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { 
-  getTrendingAnime, 
-  getMostPopularAnime,
-  searchFilteredAnime 
+  getTrendingAnimeSlim, 
+  getMostPopularAnimeSlim,
+  searchFilteredAnimeSlim 
 } from "@/modules/anilist/anilistsAPI";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { FeaturedCarousel } from "@/components/featured-carousel";
@@ -14,16 +14,16 @@ import MangaClient from "@/components/home/MangaClient";
 
 import { getCurrentSeasonInfo } from "@/utils/season";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: cache for 5 minutes, then revalidate in the background
+export const revalidate = 300;
 
 async function getData() {
   const seasonInfo = getCurrentSeasonInfo();
   try {
     const [trending, popular, topRated] = await Promise.all([
-      getTrendingAnime(null),
-      searchFilteredAnime(`type: ANIME, sort: POPULARITY_DESC, season: ${seasonInfo.season}, seasonYear: ${seasonInfo.year}, status: RELEASING`, null),
-      getMostPopularAnime(null)
+      getTrendingAnimeSlim(),
+      searchFilteredAnimeSlim(`type: ANIME, sort: POPULARITY_DESC, season: ${seasonInfo.season}, seasonYear: ${seasonInfo.year}, status: RELEASING`),
+      getMostPopularAnimeSlim()
     ]);
 
     return {
@@ -42,6 +42,7 @@ async function getData() {
     };
   }
 }
+
 
 export default async function Home() {
   const data = await getData();

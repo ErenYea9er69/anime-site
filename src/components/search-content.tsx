@@ -7,7 +7,7 @@ import { SearchResults } from "@/components/search/search-results";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X, Search } from "lucide-react";
-import { searchFilteredAnime } from "@/modules/anilist/anilistsAPI";
+import { searchFilteredAnimeSlim } from "@/modules/anilist/anilistsAPI";
 import { Media } from "@/types/anilistGraphQLTypes";
 import { SearchFilters as Filters } from "@/types/search";
 
@@ -71,7 +71,7 @@ export function SearchContent() {
       const currentPageToFetch = resetResults ? 1 : page;
 
       const searchQuery = buildSearchQuery(fToUse, qToUse);
-      const data = await searchFilteredAnime(searchQuery, null, currentPageToFetch);
+      const data = await searchFilteredAnimeSlim(searchQuery, currentPageToFetch, 36);
 
       const mediaList: Media[] = data?.media ? (data.media as Media[]) : [];
       if (mediaList.length === 0) {

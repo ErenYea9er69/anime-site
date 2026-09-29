@@ -1,59 +1,13 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { getTrendingAnime } from "@/modules/anilist/anilistsAPI";
-import { Media } from "@/types/anilistGraphQLTypes";
+import { getTrendingAnimeSlim } from "@/modules/anilist/anilistsAPI";
 import { AnimeGrid } from "@/components/anime-grid";
-import { LoadingSpinner } from "@/components/loading-spinner";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Flame } from "lucide-react";
+import { Flame } from "lucide-react";
 
-export const dynamic = 'force-dynamic';
+// ISR: cache for 5 minutes, then revalidate in the background
+export const revalidate = 300;
 
-export default function TrendingPage() {
-  const [anime, setAnime] = useState<Media[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchTrending = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await getTrendingAnime(null);
-      if (data?.media) {
-        setAnime(data.media.slice(0, 48));
-      }
-    } catch (err) {
-      console.error("Failed to fetch trending anime:", err);
-      setError("Failed to load trending anime");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTrending();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="container py-24 flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container py-16 text-center space-y-4">
-        <p className="text-destructive font-medium">{error}</p>
-        <Button onClick={fetchTrending} variant="outline">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Try Again
-        </Button>
-      </div>
-    );
-  }
+export default async function TrendingPage() {
+  const data = await getTrendingAnimeSlim(48);
+  const anime = data?.media?.slice(0, 48) || [];
 
   return (
     <div className="container py-8 space-y-8">

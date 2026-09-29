@@ -93,6 +93,32 @@ const RECOMMEND_DATA: string = `
             }
           }
         }`
+// Lean fragment for list/grid views — only fields AnimeCard + FeaturedCarousel use.
+// Cuts payload ~5-10x vs MEDIA_DATA which pulls relations, recommendations, etc.
+const MEDIA_DATA_SLIM: string = `
+        id
+        idMal
+        title {
+            romaji
+            english
+            userPreferred
+        }
+        format
+        status
+        description
+        season
+        seasonYear
+        episodes
+        coverImage {
+            large
+            extraLarge
+        }
+        bannerImage
+        genres
+        averageScore
+        isAdult
+    `;
+
 const MEDIA_DATA: string = `
         id
         idMal
@@ -762,6 +788,83 @@ export const getMostPopularAnime = async (
 
   return respData.data.Page;
 };
+
+/**
+ * Server-safe slim fetchers — use MEDIA_DATA_SLIM for list/grid views.
+ * No sessionStorage, no auth. Safe to call from server components and ISR.
+ */
+
+export const getTrendingAnimeSlim = async (
+  perPage: number = PAGES,
+): Promise<TrendingAnime> => {
+  const query = `
+      {
+          Page(page: 1, perPage: ${perPage}) {
+              pageInfo {
+                  total
+                  currentPage
+                  hasNextPage
+              }
+              media(sort: TRENDING_DESC, type: ANIME) {
+                  ${MEDIA_DATA_SLIM}
+              }
+          }
+      }
+      `;
+
+  const options = getOptions(query);
+  const respData = await makeRequest(METHOD, GRAPH_QL_URL, HEADERS, options);
+  return respData.data.Page;
+};
+
+export const getMostPopularAnimeSlim = async (
+  perPage: number = PAGES,
+): Promise<MostPopularAnime> => {
+  const query = `
+      {
+          Page(page: 1, perPage: ${perPage}) {
+              pageInfo {
+                  total
+                  currentPage
+                  hasNextPage
+              }
+              media(sort: POPULARITY_DESC, type: ANIME) {
+                  ${MEDIA_DATA_SLIM}
+              }
+          }
+      }
+      `;
+
+  const options = getOptions(query);
+  const respData = await makeRequest(METHOD, GRAPH_QL_URL, HEADERS, options);
+  return respData.data.Page;
+};
+
+export const searchFilteredAnimeSlim = async (
+  args: string,
+  page: number = 1,
+  perPage: number = 50,
+): Promise<AnimeData> => {
+  const query = `
+      {
+          Page(page: ${page}, perPage: ${perPage}) {
+              pageInfo {
+                  total
+                  currentPage
+                  hasNextPage
+              }
+              media(${args}) {
+                  ${MEDIA_DATA_SLIM}
+              }
+          }
+      }
+      `;
+
+  const options = getOptions(query);
+  const respData = await makeRequest(METHOD, GRAPH_QL_URL, HEADERS, options);
+  return respData.data.Page;
+};
+
 
 /**
  * Gets the next anime releases

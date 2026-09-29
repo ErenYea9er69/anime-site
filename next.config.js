@@ -25,7 +25,9 @@ const nextConfig = {
     ],
     minimumCacheTTL: 604800, // Cache for 1 week
     formats: ['image/webp'],
-    unoptimized: true,
+  },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns'],
   },
   typescript: {
     ignoreBuildErrors: true,
