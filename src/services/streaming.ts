@@ -52,20 +52,10 @@ export interface AniZipData {
 export interface StreamServer {
   id: string;
   name: string;
-  type: "embed" | "hls" | "adult";
+  type: "embed" | "hls";
   url: string;
   badge?: string;
   description: string;
-  isExternal?: boolean;
-}
-
-export interface AdultStreamSource {
-  id: string;
-  name: string;
-  url: string;
-  badge?: string;
-  description: string;
-  color: string;
 }
 
 export interface StreamResolution {
@@ -82,11 +72,12 @@ export interface StreamResolution {
   episodeOverview?: string;
   isMovie: boolean;
   isAdult: boolean;
-  adultSources?: AdultStreamSource[];
 }
 
 // In-memory cache for AniZip data
 const aniZipCache = new Map<number, AniZipData>();
+// In-memory cache for TMDB ID lookups
+const tmdbLookupCache = new Map<number, string>();
 
 /**
  * Fetches cross-database mappings and episode metadata from AniZip (free community database)
@@ -143,7 +134,57 @@ export async function getAniZipData(anilistId: number | string): Promise<AniZipD
 }
 
 /**
+ * Resolves TMDB ID via internal lookup API if AniZip lacks the mapping
+ */
+async function lookupTmdbId(
+  animeId: number,
+  title: string,
+  isMovie: boolean
+): Promise<{ tmdbId: string | null; isMovieFallback?: boolean }> {
+  if (tmdbLookupCache.has(animeId)) {
+    return { tmdbId: tmdbLookupCache.get(animeId)! };
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const stored = sessionStorage.getItem(`tmdb_id_${animeId}`);
+      if (stored) {
+        tmdbLookupCache.set(animeId, stored);
+        return { tmdbId: stored };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  try {
+    const url = `/api/tmdb-lookup?id=${animeId}&title=${encodeURIComponent(title)}&type=${isMovie ? "movie" : "tv"}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) return { tmdbId: null };
+
+    const data = await res.json();
+    if (data?.tmdbId) {
+      const idStr = String(data.tmdbId);
+      tmdbLookupCache.set(animeId, idStr);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(`tmdb_id_${animeId}`, idStr);
+        } catch {
+          // ignore
+        }
+      }
+      return { tmdbId: idStr, isMovieFallback: Boolean(data.isMovie) };
+    }
+  } catch (error) {
+    console.warn("Internal TMDB lookup skipped:", error);
+  }
+
+  return { tmdbId: null };
+}
+
+/**
  * Resolves streaming servers for a given anime and episode
+ * Guarantees working embedded HTML5 players without external redirects
  */
 export async function resolveStreamServers(
   animeId: number,
@@ -152,18 +193,33 @@ export async function resolveStreamServers(
 ): Promise<StreamResolution> {
   const aniZip = await getAniZipData(animeId);
   const mappings = aniZip?.mappings;
-  const isMovie = media?.format === "MOVIE" || (media?.episodes === 1 && !media?.format?.includes("TV"));
+  let isMovie = media?.format === "MOVIE" || (media?.episodes === 1 && !media?.format?.includes("TV"));
 
-  // Check if anime is 18+ / adult / hentai
   const isAdult = Boolean(
     media?.isAdult ||
     media?.genres?.some((g) => g.toLowerCase() === "hentai") ||
     mappings?.type?.toUpperCase() === "HENTAI"
   );
 
-  const tmdbId = mappings?.themoviedb_id;
+  let tmdbId = mappings?.themoviedb_id;
   const imdbId = mappings?.imdb_id;
   const malId = media?.idMal || mappings?.mal_id;
+
+  const cleanTitle = (
+    media?.title?.english ||
+    media?.title?.romaji ||
+    media?.title?.userPreferred ||
+    ""
+  ).replace(/[^\w\s-]/gi, " ").trim();
+
+  // If TMDB ID is missing from AniZip (frequent for adult/OVA/ONA titles), resolve via TMDB lookup
+  if (!tmdbId && cleanTitle) {
+    const lookup = await lookupTmdbId(animeId, cleanTitle, isMovie);
+    if (lookup.tmdbId) {
+      tmdbId = lookup.tmdbId;
+      if (lookup.isMovieFallback) isMovie = true;
+    }
+  }
 
   const epKey = episodeNumber.toString();
   const epData = aniZip?.episodes?.[epKey];
@@ -175,156 +231,107 @@ export async function resolveStreamServers(
   const episodeOverview = epData?.overview || epData?.summary;
 
   const servers: StreamServer[] = [];
-  let adultSources: AdultStreamSource[] | undefined;
 
-  // Extract clean anime title for adult search deep-links
-  const cleanTitle = (
-    media?.title?.english ||
-    media?.title?.romaji ||
-    media?.title?.userPreferred ||
-    ""
-  ).replace(/[^\w\s-]/gi, "").trim();
+  // Server 1: VidLink HD (Fast, Full HD player, sub/dub options)
+  if (tmdbId) {
+    const vidlinkUrl = isMovie
+      ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=6366f1&secondaryColor=18181b&icons=vid`
+      : `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${episodeInSeason}?primaryColor=6366f1&secondaryColor=18181b&icons=vid`;
 
-  if (isAdult) {
-    // Generate specialized 18+ streaming hub sources
-    adultSources = [
-      {
-        id: "hanime",
-        name: "Hanime.tv",
-        url: `https://hanime.tv/search?q=${encodeURIComponent(cleanTitle)}`,
-        badge: "Full HD",
-        description: "Official 1080p/4K adult anime streaming hub",
-        color: "from-pink-500 to-rose-600",
-      },
-      {
-        id: "oppai",
-        name: "OppaiStream",
-        url: `https://oppai.stream/search?a=recent&p=1&t=${encodeURIComponent(cleanTitle)}&g=&b=&s=`,
-        badge: "4K Uncensored",
-        description: "4K & Uncensored releases with episode navigator",
-        color: "from-amber-500 to-orange-600",
-      },
-      {
-        id: "hstream",
-        name: "Hstream.moe",
-        url: `https://hstream.moe/search?q=${encodeURIComponent(cleanTitle)}`,
-        badge: "Fast",
-        description: "High speed adult anime mirror",
-        color: "from-purple-500 to-indigo-600",
-      },
-      {
-        id: "hentaihaven",
-        name: "HentaiHaven",
-        url: `https://hentaihaven.xxx/?s=${encodeURIComponent(cleanTitle)}`,
-        badge: "Archive",
-        description: "Extensive classic and ongoing adult series archive",
-        color: "from-blue-500 to-cyan-600",
-      },
-    ];
-
-    // For 18+ titles that also have MAL indexing (e.g. OVA/ONA)
-    if (malId) {
-      servers.push({
-        id: "vidlink",
-        name: "VidLink Anime",
-        type: "embed",
-        url: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=6366f1`,
-        badge: "MAL Player",
-        description: "Player via MyAnimeList index",
-      });
-    }
-
-    // Direct AniList ID player
     servers.push({
-      id: "vidsrc_cc",
-      name: "AniStream",
+      id: "vidlink",
+      name: "VidLink HD",
       type: "embed",
-      url: `https://vidsrc.cc/v2/embed/anime/${animeId}/${episodeNumber}`,
-      badge: "Direct",
-      description: "Direct AniList ID player",
+      url: vidlinkUrl,
+      badge: "Recommended",
+      description: "Fast 1080p, Auto-Next, Sub & Dub Support",
     });
-  } else {
-    // Standard Non-Adult Anime Servers (VidLink, VidSrc Pro, VidSrc Classic, AutoEmbed)
-    if (tmdbId) {
-      const vidlinkUrl = isMovie
-        ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=6366f1&secondaryColor=18181b&icons=vid`
-        : `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${episodeInSeason}?primaryColor=6366f1&secondaryColor=18181b&icons=vid`;
-
-      servers.push({
-        id: "vidlink",
-        name: "VidLink HD",
-        type: "embed",
-        url: vidlinkUrl,
-        badge: "Recommended",
-        description: "Fast 1080p, Auto-Next, Sub & Dub Support",
-      });
-    } else if (malId) {
-      servers.push({
-        id: "vidlink",
-        name: "VidLink HD",
-        type: "embed",
-        url: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=6366f1`,
-        badge: "Recommended",
-        description: "Fast 1080p Anime Player",
-      });
-    }
-
-    if (tmdbId) {
-      const vidsrcPmUrl = isMovie
-        ? `https://vidsrc.pm/embed/movie/${tmdbId}`
-        : `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${episodeInSeason}`;
-
-      servers.push({
-        id: "vidsrc_pm",
-        name: "VidSrc Pro",
-        type: "embed",
-        url: vidsrcPmUrl,
-        badge: "Fast",
-        description: "High-speed backup server",
-      });
-    }
-
-    if (tmdbId) {
-      const vidsrcMeUrl = isMovie
-        ? `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`
-        : `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${episodeInSeason}`;
-
-      servers.push({
-        id: "vidsrc_me",
-        name: "VidSrc Classic",
-        type: "embed",
-        url: vidsrcMeUrl,
-        badge: "HD",
-        description: "Stable multi-source server",
-      });
-    }
-
-    if (imdbId || tmdbId) {
-      const identifier = imdbId || tmdbId;
-      const isImdb = Boolean(imdbId);
-      const autoEmbedUrl = isMovie
-        ? `https://autoembed.co/movie/${isImdb ? "imdb" : "tmdb"}/${identifier}`
-        : `https://autoembed.co/tv/${isImdb ? "imdb" : "tmdb"}/${identifier}${isImdb ? `-${seasonNumber}-${episodeInSeason}` : `/${seasonNumber}/${episodeInSeason}`}`;
-
-      servers.push({
-        id: "autoembed",
-        name: "AutoEmbed",
-        type: "embed",
-        url: autoEmbedUrl,
-        badge: "Multi",
-        description: "Multiple mirrors & alternate audio",
-      });
-    }
-
+  } else if (malId) {
     servers.push({
-      id: "vidsrc_cc",
-      name: "AniStream",
+      id: "vidlink",
+      name: "VidLink HD",
       type: "embed",
-      url: `https://vidsrc.cc/v2/embed/anime/${animeId}/${episodeNumber}`,
-      badge: "Direct",
-      description: "Direct AniList ID player",
+      url: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=6366f1`,
+      badge: "Recommended",
+      description: "Fast 1080p Anime Player",
     });
   }
+
+  // Server 2: VidSrc Pro (High availability node)
+  if (tmdbId) {
+    const vidsrcPmUrl = isMovie
+      ? `https://vidsrc.pm/embed/movie/${tmdbId}`
+      : `https://vidsrc.pm/embed/tv/${tmdbId}/${seasonNumber}/${episodeInSeason}`;
+
+    servers.push({
+      id: "vidsrc_pm",
+      name: "VidSrc Pro",
+      type: "embed",
+      url: vidsrcPmUrl,
+      badge: "Fast",
+      description: "High-speed backup server",
+    });
+  }
+
+  // Server 3: VidSrc Classic
+  if (tmdbId) {
+    const vidsrcMeUrl = isMovie
+      ? `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`
+      : `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNumber}&episode=${episodeInSeason}`;
+
+    servers.push({
+      id: "vidsrc_me",
+      name: "VidSrc Classic",
+      type: "embed",
+      url: vidsrcMeUrl,
+      badge: "HD",
+      description: "Stable multi-source server",
+    });
+  }
+
+  // Server 4: AutoEmbed
+  if (imdbId || tmdbId) {
+    const identifier = imdbId || tmdbId;
+    const isImdb = Boolean(imdbId);
+    const autoEmbedUrl = isMovie
+      ? `https://autoembed.co/movie/${isImdb ? "imdb" : "tmdb"}/${identifier}`
+      : `https://autoembed.co/tv/${isImdb ? "imdb" : "tmdb"}/${identifier}${isImdb ? `-${seasonNumber}-${episodeInSeason}` : `/${seasonNumber}/${episodeInSeason}`}`;
+
+    servers.push({
+      id: "autoembed",
+      name: "AutoEmbed",
+      type: "embed",
+      url: autoEmbedUrl,
+      badge: "Multi",
+      description: "Multiple mirrors & alternate audio",
+    });
+  }
+
+  // Server 5: MultiEmbed (Alternative player)
+  if (tmdbId) {
+    const multiEmbedUrl = isMovie
+      ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`
+      : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${seasonNumber}&e=${episodeInSeason}`;
+
+    servers.push({
+      id: "multiembed",
+      name: "MultiEmbed",
+      type: "embed",
+      url: multiEmbedUrl,
+      badge: "Mirror",
+      description: "Alternative multi-mirror player",
+    });
+  }
+
+  // Server 6: AniStream Direct (Fallback by AniList ID)
+  servers.push({
+    id: "vidsrc_cc",
+    name: "AniStream",
+    type: "embed",
+    url: `https://vidsrc.cc/v2/embed/anime/${animeId}/${episodeNumber}`,
+    badge: "Direct",
+    description: "Direct AniList ID player",
+  });
 
   return {
     servers,
@@ -340,6 +347,5 @@ export async function resolveStreamServers(
     episodeOverview,
     isMovie,
     isAdult,
-    adultSources,
   };
 }
