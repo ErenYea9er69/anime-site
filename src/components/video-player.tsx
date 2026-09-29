@@ -6,7 +6,18 @@ import { resolveStreamServers, StreamServer, StreamResolution } from "@/services
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Server, RefreshCw, Film, Play, Sparkles, AlertCircle, Info } from "lucide-react";
+import {
+  Server,
+  RefreshCw,
+  Film,
+  Play,
+  Sparkles,
+  AlertCircle,
+  Info,
+  ExternalLink,
+  ShieldAlert,
+  Flame,
+} from "lucide-react";
 import Image from "next/image";
 
 interface VideoPlayerProps {
@@ -34,6 +45,7 @@ export function VideoPlayer({
   const [activeServerId, setActiveServerId] = useState<string>("vidlink");
   const [isLoading, setIsLoading] = useState(true);
   const [isIframeLoading, setIsIframeLoading] = useState(true);
+  const [showEmbedAnyway, setShowEmbedAnyway] = useState(false);
   const [serverKey, setServerKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -48,7 +60,6 @@ export function VideoPlayer({
     try {
       const res = await resolveStreamServers(parseInt(animeId, 10), episodeNumber, media);
       setResolution(res);
-      // If previous server exists in new servers list, keep it, else default
       setActiveServerId((prev) => {
         if (prev === "trailer") return "trailer";
         const exists = res.servers.some((s) => s.id === prev);
@@ -71,6 +82,7 @@ export function VideoPlayer({
 
   const handleServerChange = (serverId: string) => {
     setIsIframeLoading(true);
+    setShowEmbedAnyway(true);
     setActiveServerId(serverId);
     setServerKey((k) => k + 1);
   };
@@ -79,6 +91,8 @@ export function VideoPlayer({
     setIsIframeLoading(true);
     setServerKey((k) => k + 1);
   };
+
+  const isAdult = Boolean(resolution?.isAdult);
 
   return (
     <div className="flex flex-col gap-3">
@@ -97,8 +111,73 @@ export function VideoPlayer({
           </div>
         )}
 
+        {/* 18+ Adult Hub Interactive Player Screen when embed is not yet forced */}
+        {!isLoading && isAdult && !showEmbedAnyway && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-t from-black via-zinc-950/90 to-black/80 z-20 text-center">
+            {posterImage && (
+              <div
+                className="absolute inset-0 opacity-20 bg-cover bg-center filter blur-md -z-10"
+                style={{ backgroundImage: `url(${posterImage})` }}
+              />
+            )}
+            <div className="max-w-xl space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 text-xs font-semibold">
+                <ShieldAlert className="h-3.5 w-3.5" />
+                <span>18+ Adult Content Notice</span>
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Stream {title} (Ep {episodeNumber})
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Mainstream TV databases (TMDB/IMDb) do not index explicit 18+ anime. Stream this episode directly in Full HD / 4K on dedicated adult anime networks below:
+                </p>
+              </div>
+
+              {/* Direct Launch Cards */}
+              <div className="grid grid-cols-2 gap-2.5 pt-2">
+                {resolution?.adultSources?.map((source) => (
+                  <a
+                    key={source.id}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-start p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-pink-500/50 transition-all group text-left shadow-lg"
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="font-bold text-sm text-foreground group-hover:text-pink-400 transition-colors flex items-center gap-1.5">
+                        <Flame className="h-3.5 w-3.5 text-pink-500" />
+                        {source.name}
+                      </span>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-white transition-colors" />
+                    </div>
+                    <span className="text-[11px] text-muted-foreground line-clamp-1">
+                      {source.description}
+                    </span>
+                    <span className="mt-2 text-[10px] px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-300 font-semibold uppercase tracking-wider">
+                      {source.badge}
+                    </span>
+                  </a>
+                ))}
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowEmbedAnyway(true)}
+                  className="text-xs text-muted-foreground hover:text-white"
+                >
+                  Or try Embedded Scraper Player
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Embedded Video Stream Player */}
-        {!isLoading && activeServer && activeServerId !== "trailer" && (
+        {!isLoading && activeServer && activeServerId !== "trailer" && (!isAdult || showEmbedAnyway) && (
           <div className="relative w-full h-full">
             {isIframeLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 z-20 backdrop-blur-xs">
@@ -143,7 +222,7 @@ export function VideoPlayer({
 
           <div className="flex flex-wrap items-center gap-1.5">
             {resolution?.servers.map((server) => {
-              const isActive = activeServerId === server.id;
+              const isActive = activeServerId === server.id && showEmbedAnyway;
               return (
                 <Button
                   key={server.id}
@@ -175,6 +254,22 @@ export function VideoPlayer({
                 </Button>
               );
             })}
+
+            {isAdult && (
+              <Button
+                variant={!showEmbedAnyway ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowEmbedAnyway(false)}
+                className={`h-7 px-3 text-xs rounded-md gap-1.5 ${
+                  !showEmbedAnyway
+                    ? "bg-pink-600 text-white font-semibold shadow-sm shadow-pink-600/30"
+                    : "border-pink-500/30 text-pink-400 hover:bg-pink-500/10"
+                }`}
+              >
+                <Flame className="h-3 w-3 text-pink-300" />
+                <span>18+ Streaming Hub</span>
+              </Button>
+            )}
 
             {trailerId && (
               <Button
@@ -208,21 +303,54 @@ export function VideoPlayer({
         </div>
       </div>
 
-      {/* Helpful streamer tip banner */}
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground/80 px-2 py-1 bg-white/2 rounded border border-white/5">
-        <div className="flex items-center gap-1.5">
-          <Info className="h-3.5 w-3.5 text-primary shrink-0" />
-          <span>
-            Streaming <strong className="text-foreground">Episode {episodeNumber}</strong> via{" "}
-            <strong className="text-foreground">{activeServer?.name || "Player"}</strong>. If you experience buffering or slow loading, try switching to <strong className="text-foreground">VidSrc Pro</strong> or <strong className="text-foreground">AutoEmbed</strong>.
-          </span>
+      {/* 18+ Dedicated Streaming Mirrors Bar (when isAdult is true) */}
+      {isAdult && resolution?.adultSources && (
+        <div className="p-3 rounded-lg bg-pink-950/20 border border-pink-500/20 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-pink-400">
+              <Flame className="h-3.5 w-3.5 text-pink-500" />
+              <span>DEDICATED 18+ ANIME SOURCES FOR &quot;{title}&quot;:</span>
+            </div>
+            <span className="text-[10px] text-pink-300/70">Click to open episode on source</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {resolution.adultSources.map((source) => (
+              <a
+                key={source.id}
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2 rounded-md bg-white/5 hover:bg-white/10 border border-white/5 hover:border-pink-500/40 text-xs font-semibold text-foreground hover:text-pink-300 transition-all group"
+              >
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate">{source.name}</span>
+                  <span className="text-[10px] font-normal text-muted-foreground">{source.badge}</span>
+                </div>
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-pink-400 shrink-0 ml-1.5" />
+              </a>
+            ))}
+          </div>
         </div>
-        {resolution?.seasonNumber && resolution.seasonNumber > 1 && (
-          <span className="hidden sm:inline-block text-primary font-mono font-medium">
-            Season {resolution.seasonNumber} • Ep {resolution.episodeInSeason}
-          </span>
-        )}
-      </div>
+      )}
+
+      {/* Helpful streamer tip banner */}
+      {!isAdult && (
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground/80 px-2 py-1 bg-white/2 rounded border border-white/5">
+          <div className="flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span>
+              Streaming <strong className="text-foreground">Episode {episodeNumber}</strong> via{" "}
+              <strong className="text-foreground">{activeServer?.name || "Player"}</strong>. If you experience buffering, switch to <strong className="text-foreground">VidSrc Pro</strong> or <strong className="text-foreground">AutoEmbed</strong>.
+            </span>
+          </div>
+          {resolution?.seasonNumber && resolution.seasonNumber > 1 && (
+            <span className="hidden sm:inline-block text-primary font-mono font-medium">
+              Season {resolution.seasonNumber} • Ep {resolution.episodeInSeason}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
