@@ -6,24 +6,23 @@ import { Navbar } from '@/components/navbar';
 import { HistoryProvider } from "@/context/HistoryContext";
 import { ListsProvider } from '@/context/ListsContext';
 import { MainContent } from '@/components/main-content';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import AuthProvider from '@/components/providers/auth-provider'
+import AuthProvider from '@/components/providers/auth-provider';
+import QueryProvider from '@/components/providers/query-provider';
+import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'] });
-const queryClient = new QueryClient()
-import QueryProvider from '@/components/providers/query-provider'
 
 export const metadata: Metadata = {
-  title: 'Tsune',
-  description: 'Simple and easy to use open source anime streaming site without ads.',
+  title: 'Tsune - Modern Anime Streaming',
+  description: 'Ad-free anime discovery and streaming experience with rich catalogs, personalized tracking, and modern UI.',
   icons: {
     icon: '/favicon.png',
     shortcut: '/favicon.png',
     apple: '/favicon.png',
   },
-}
+};
 
-export const revalidate = 3600 // Revalidate every hour
+export const revalidate = 3600; // Revalidate every hour
 
 export default function RootLayout({
   children,
@@ -31,30 +30,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ListsProvider>
-          <HistoryProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="dark"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <div className="relative flex min-h-screen flex-col">
-                <Navbar />
-                <QueryProvider>
-                  <MainContent>
-                    {children}
-                  </MainContent>
-                </QueryProvider>
-              </div>
-            </ThemeProvider>
-          </HistoryProvider>
-        </ListsProvider>
+      <body className={`${inter.className} min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary`}>
+        <AuthProvider>
+          <ListsProvider>
+            <HistoryProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="dark"
+                enableSystem
+                disableTransitionOnChange
+              >
+                <div className="relative flex min-h-screen flex-col">
+                  <Navbar />
+                  <QueryProvider>
+                    <MainContent>
+                      {children}
+                    </MainContent>
+                  </QueryProvider>
+                  <Toaster position="bottom-right" richColors theme="system" />
+                </div>
+              </ThemeProvider>
+            </HistoryProvider>
+          </ListsProvider>
+        </AuthProvider>
       </body>
     </html>
-    </AuthProvider>
   );
 }

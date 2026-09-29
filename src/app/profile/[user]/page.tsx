@@ -18,12 +18,12 @@ function convertMinutesToDays(minutes: number) {
   return result.trim();
 }
 
-export default async function Page({ params }: { params: { user: string } }) {
+export default async function Page({ params }: { params: Promise<{ user: string }> }) {
   // Get the session first
   const session = await getServerSession(authOptions);
   
   // Get the username from params
-  const username = params.user;
+  const { user: username } = await params;
 
   const user = await fetch("https://graphql.anilist.co/", {
     method: "POST",

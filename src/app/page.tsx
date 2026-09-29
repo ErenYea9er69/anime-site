@@ -12,28 +12,33 @@ import PlanToWatchClient from "@/components/home/PlanToWatchClient";
 import MangaClient from "@/components/home/MangaClient";
 
 
+import { getCurrentSeasonInfo } from "@/utils/season";
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getData() {
+  const seasonInfo = getCurrentSeasonInfo();
   try {
     const [trending, popular, topRated] = await Promise.all([
       getTrendingAnime(null),
-      searchFilteredAnime("type: ANIME, sort: POPULARITY_DESC, season: FALL, seasonYear: 2024, status: RELEASING", null),
+      searchFilteredAnime(`type: ANIME, sort: POPULARITY_DESC, season: ${seasonInfo.season}, seasonYear: ${seasonInfo.year}, status: RELEASING`, null),
       getMostPopularAnime(null)
     ]);
 
     return {
       trending: trending?.media || [],
       popular: popular?.media || [],
-      topRated: topRated?.media || []
+      topRated: topRated?.media || [],
+      seasonLabel: seasonInfo.label,
     };
   } catch (error) {
     console.error("Error fetching anime data:", error);
     return {
       trending: [],
       popular: [],
-      topRated: []
+      topRated: [],
+      seasonLabel: seasonInfo.label,
     };
   }
 }

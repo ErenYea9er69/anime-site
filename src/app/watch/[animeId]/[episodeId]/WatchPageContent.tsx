@@ -1,16 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { VideoPlayer } from "@/components/video-player";
 import { Badge } from "@/components/ui/badge";
 import { WatchlistButton } from "@/components/watchlist/watchlist-button";
-import { EpisodeNavigation } from "@/components/episode-navigation";
 import { Media } from "@/types/anilistGraphQLTypes";
 import { Card } from "@/components/ui/card";
-import { ShareIcon, FlagIcon } from "lucide-react";
+import {
+  Share2,
+  Maximize2,
+  Minimize2,
+  ChevronLeft,
+  ChevronRight,
+  ListVideo,
+  Clock,
+  Tv,
+  Star,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Head from "next/head";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import Image from "next/image";
+import { toast } from "sonner";
 
 interface WatchPageContentProps {
   anime: Media;
@@ -19,162 +31,278 @@ interface WatchPageContentProps {
   episodeNumber: number;
 }
 
-export function WatchPageContent({ 
-  anime, 
+export function WatchPageContent({
+  anime,
   animeId,
   episodeId,
-  episodeNumber 
+  episodeNumber,
 }: WatchPageContentProps) {
   const [isTheaterMode, setIsTheaterMode] = useState(false);
-  const [episodeData, setEpisodeData] = useState<any>(null);
-  const [episodeNavigation, setEpisodeNavigation] = useState(null);
+  const [episodeSearch, setEpisodeSearch] = useState("");
+  const activeEpisodeRef = useRef<HTMLAnchorElement>(null);
 
+  const title = anime.title?.english || anime.title?.romaji || anime.title?.userPreferred || "Anime Episode";
+  const totalEpisodes = anime.episodes || 1;
+  const hasPrev = episodeNumber > 1;
+  const hasNext = episodeNumber < totalEpisodes;
+
+  // Set document title
   useEffect(() => {
-    // Set up media session metadata for better media controls
+    document.title = `${title} - Episode ${episodeNumber} | Tsune`;
+  }, [title, episodeNumber]);
+
+  // Auto-scroll episode list to current active episode
+  useEffect(() => {
+    if (activeEpisodeRef.current) {
+      activeEpisodeRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [episodeNumber]);
+
+  // Media session metadata
+  useEffect(() => {
     const mediaSession = navigator.mediaSession;
     if (!mediaSession) return;
 
-    const title = anime.title?.english || anime.title?.romaji;
-    const artwork = anime.bannerImage ? 
-      [{ src: anime.bannerImage, sizes: "512x512", type: "image/jpeg" }] : 
-      undefined;
+    const artwork = anime.bannerImage
+      ? [{ src: anime.bannerImage, sizes: "512x512", type: "image/jpeg" }]
+      : undefined;
 
     mediaSession.metadata = new MediaMetadata({
-      title: title,
+      title,
       artist: `Episode ${episodeNumber}`,
-      artwork
+      artwork,
     });
-  }, [anime, episodeNumber]);
+  }, [anime, title, episodeNumber]);
 
   const handleShare = async () => {
     try {
-      if (navigator.share) {
+      if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share({
-          title: `Watch Now - ${anime.title?.english || anime.title?.romaji}`,
-          url: window.location.href
+          title: `Watch ${title} - Episode ${episodeNumber}`,
+          url: window.location.href,
         });
       } else {
         await navigator.clipboard.writeText(window.location.href);
-        alert('Link copied to clipboard!');
+        toast.success("Link copied to clipboard!");
       }
     } catch (error) {
-      console.error('Error sharing:', error);
+      if ((error as Error)?.name !== "AbortError") {
+        toast.error("Failed to copy link");
+      }
     }
   };
 
+  // Filter episodes based on user search
+  const allEpisodes = Array.from({ length: totalEpisodes }, (_, i) => i + 1);
+  const filteredEpisodes = episodeSearch.trim()
+    ? allEpisodes.filter((ep) => ep.toString().includes(episodeSearch.trim()))
+    : allEpisodes;
+
   return (
-    <>
-      <Head>
-        <title>{`${anime.title?.romaji} - Episode ${episodeNumber}`}</title>
-        <meta name="description" content={anime.description} />
-        <meta property="og:title" content={`Watch - ${anime.title?.english}`} />
-        <meta property="og:description" content={anime.description} />
-        <meta property="og:image" content={anime.bannerImage} />
-      </Head>
+    <div className={`transition-all duration-300 ${isTheaterMode ? "max-w-full" : "max-w-7xl"} mx-auto space-y-6`}>
+      {/* Video Player Section */}
+      <div className="relative rounded-xl overflow-hidden bg-black/60 shadow-2xl">
+        <VideoPlayer
+          animeId={animeId}
+          episodeId={episodeId}
+          title={title}
+          episodeNumber={episodeNumber}
+          totalEpisodes={totalEpisodes}
+          listAnimeData={{
+            id: null,
+            mediaId: null,
+            progress: undefined,
+            media: anime,
+          }}
+        />
 
-      <div className={`container mx-auto px-4 py-6 ${isTheaterMode ? 'theater-mode' : ''}`}>
-        <div className="video-container">
-          <VideoPlayer
-            animeId={animeId}
-            episodeId={episodeId}
-            title={anime.title?.english || anime.title?.romaji || ""}
-            episodeNumber={episodeNumber}
-            totalEpisodes={anime.episodes || 9999}
-            listAnimeData={{
-              id: null,
-              mediaId: null,
-              progress: undefined,
-              media: anime
-            }}
-          />
-        </div>
+        {/* Quick Nav & Controls Beneath Player */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-card/80 border-t border-white/10 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/anime/${animeId}`}
+              className="text-xs text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 transition-colors"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>Back to Anime Details</span>
+            </Link>
+          </div>
 
-        <div className="grid gap-8 mt-6 lg:grid-cols-[2fr_1fr]">
-          <Card className="p-6 space-y-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-2xl font-bold">
-                  {anime.title?.english || anime.title?.romaji}
-                </h1>
-                <p className="text-muted-foreground">Episode {episodeNumber}</p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleShare}>
-                  <ShareIcon className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-                <Button variant="outline" size="sm">
-                  <FlagIcon className="h-4 w-4 mr-2" />
-                  Report
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {anime.genres?.map((genre) => (
-                <Badge key={genre} variant="secondary">
-                  {genre}
-                </Badge>
-              ))}
-            </div>
-
-            <p className="text-muted-foreground">
-              {anime.description?.replace(/<[^>]*>/g, "")}
-            </p>
-
-            <div className="flex items-center gap-4">
-              <WatchlistButton anime={anime} />
-              <div className="text-sm text-muted-foreground">
-                {anime.episodes ? `${anime.episodes} Episodes` : 'Ongoing'} • {anime.duration} mins
-              </div>
-            </div>
-          </Card>
-
-  <Card className="p-6">
-  <h2 className="text-lg font-semibold mb-4">Episodes</h2>
-  <div className="grid gap-2 max-h-[60vh] overflow-y-auto">
-    {Array.from({ length: anime.episodes || 1 }).map((_, index) => (
-      <Link 
-        href={`/watch/${animeId}/${index + 1}`} 
-        key={index}
-        className={`p-3 flex items-center gap-3 rounded-md transition-colors
-          ${episodeNumber === index + 1 
-            ? 'bg-primary text-primary-foreground' 
-            : 'hover:bg-muted'
-          }`}
-      >
-        <div className="flex-shrink-0 w-24 h-16 relative rounded-md overflow-hidden">
-          <img
-            src={anime.bannerImage || '/episode-placeholder.jpg'}
-            alt={`Episode ${index + 1}`}
-            className="object-cover w-full h-full"
-          />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold flex items-center gap-2">
-            <span>Episode {index + 1}</span>
-            {episodeData?.episodes?.[index]?.title && (
-              <span className="text-sm text-muted-foreground truncate">
-                - {episodeData.episodes[index].title}
-              </span>
+          <div className="flex items-center gap-2">
+            {hasPrev && (
+              <Button asChild variant="outline" size="sm" className="h-8 text-xs border-white/10">
+                <Link href={`/watch/${animeId}/${episodeNumber - 1}`}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Prev Ep
+                </Link>
+              </Button>
             )}
-          </div>
-          {episodeData?.episodes?.[index]?.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {episodeData.episodes[index].description}
-            </p>
-          )}
-          <div className="text-sm text-muted-foreground mt-1">
-            {episodeNumber === index + 1 ? 'Currently Playing' : 'Click to Watch'}
-          </div>
-        </div>
-      </Link>
-    ))}
-  </div>
-</Card>
 
+            <span className="text-xs font-semibold px-2 text-foreground">
+              Ep {episodeNumber} of {totalEpisodes}
+            </span>
+
+            {hasNext && (
+              <Button asChild variant="outline" size="sm" className="h-8 text-xs border-white/10">
+                <Link href={`/watch/${animeId}/${episodeNumber + 1}`}>
+                  Next Ep
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsTheaterMode(!isTheaterMode)}
+              className="h-8 px-2 text-xs border-white/10 hidden md:flex items-center gap-1"
+              aria-label="Toggle theater mode"
+            >
+              {isTheaterMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+              <span>{isTheaterMode ? "Standard" : "Theater"}</span>
+            </Button>
+          </div>
         </div>
       </div>
-    </>
+
+      {/* Anime Info & Episode Selection Grid */}
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        {/* Left Column: Details */}
+        <Card className="p-6 space-y-5 bg-card/50 border-white/10 backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                  {anime.format || "TV"} Series
+                </span>
+                <span className="text-muted-foreground text-xs">•</span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  Episode {episodeNumber}
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                {title}
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-2 self-start">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShare}
+                className="h-8 text-xs border-white/10 hover:bg-white/10"
+              >
+                <Share2 className="h-3.5 w-3.5 mr-1.5" />
+                Share
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {anime.genres?.map((genre) => (
+              <Badge
+                key={genre}
+                variant="secondary"
+                className="bg-white/5 hover:bg-white/10 border-white/10 text-xs"
+              >
+                {genre}
+              </Badge>
+            ))}
+          </div>
+
+          {anime.description && (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {anime.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/5">
+            <div className="flex items-center gap-3">
+              <WatchlistButton anime={anime} />
+            </div>
+
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              {anime.averageScore && (
+                <div className="flex items-center gap-1 text-amber-400 font-semibold">
+                  <Star className="h-3.5 w-3.5 fill-amber-400" />
+                  <span>{(anime.averageScore / 10).toFixed(1)}</span>
+                </div>
+              )}
+              {anime.duration && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{anime.duration} mins</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                <Tv className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{anime.status || "Finished"}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Right Column: Episode Navigator */}
+        <Card className="p-4 sm:p-5 flex flex-col bg-card/50 border-white/10 backdrop-blur-sm h-fit max-h-[650px]">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <ListVideo className="h-4 w-4 text-primary" />
+              <h2 className="font-bold text-sm sm:text-base">Episodes ({totalEpisodes})</h2>
+            </div>
+          </div>
+
+          {totalEpisodes > 12 && (
+            <div className="relative mb-3">
+              <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Jump to ep..."
+                value={episodeSearch}
+                onChange={(e) => setEpisodeSearch(e.target.value)}
+                className="h-8 text-xs pl-8 bg-background/50 border-white/10"
+              />
+            </div>
+          )}
+
+          <div className="grid gap-2 overflow-y-auto pr-1 max-h-[500px] scrollbar-hide">
+            {filteredEpisodes.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-6">
+                No episodes matching "{episodeSearch}"
+              </p>
+            ) : (
+              filteredEpisodes.map((epNum) => {
+                const isCurrent = epNum === episodeNumber;
+                return (
+                  <Link
+                    key={epNum}
+                    ref={isCurrent ? activeEpisodeRef : null}
+                    href={`/watch/${animeId}/${epNum}`}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg text-xs font-medium transition-all ${
+                      isCurrent
+                        ? "bg-primary text-primary-foreground font-bold shadow-md shadow-primary/25"
+                        : "hover:bg-white/5 text-muted-foreground hover:text-foreground border border-transparent hover:border-white/5"
+                    }`}
+                  >
+                    <div className="h-6 w-8 rounded bg-black/40 flex items-center justify-center font-mono text-[11px] shrink-0">
+                      {epNum}
+                    </div>
+                    <div className="flex-1 truncate">
+                      Episode {epNum}
+                    </div>
+                    {isCurrent && (
+                      <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/30 text-white font-bold shrink-0">
+                        Playing
+                      </span>
+                    )}
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
   );
 }

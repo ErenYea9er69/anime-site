@@ -52,12 +52,12 @@ export function SearchFilters({ filters, onFilterChange }: SearchFiltersProps) {
       <Separator />
 
       <div className="space-y-2">
-        <h3 className="font-medium">Format</h3>
+        <h3 className="font-medium text-sm text-muted-foreground">Format</h3>
         <Select
-          value={filters.format || ""}
-          onValueChange={(value) => onFilterChange({ ...filters, format: value })}
+          value={filters.format || "ALL"}
+          onValueChange={(value) => onFilterChange({ ...filters, format: value === "ALL" ? "" : value })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Any format" />
           </SelectTrigger>
           <SelectContent>
@@ -73,12 +73,12 @@ export function SearchFilters({ filters, onFilterChange }: SearchFiltersProps) {
       <Separator />
 
       <div className="space-y-2">
-        <h3 className="font-medium">Sort By</h3>
+        <h3 className="font-medium text-sm text-muted-foreground">Sort By</h3>
         <Select
           value={filters.sort || "TRENDING_DESC"}
           onValueChange={(value) => onFilterChange({ ...filters, sort: value })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

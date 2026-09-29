@@ -192,17 +192,23 @@ export function EpisodeList({ episodes, animeId, coverImage, bannerImage }: Epis
             >
               <Card className="overflow-hidden h-full">
                 <div className="group relative flex flex-col h-full">
-                  <div className="relative aspect-video w-full overflow-hidden">
-                    <Image
-                      src={imageSource}
-                      alt={`Episode ${episodeNumber}`}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      priority={episodeNumber <= 4}
-                    />
+                  <div className="relative aspect-video w-full overflow-hidden bg-muted">
+                    {imageSource ? (
+                      <Image
+                        src={imageSource}
+                        alt={`Episode ${episodeNumber}`}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        priority={episodeNumber <= 4}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-card text-muted-foreground">
+                        <PlayCircle className="h-8 w-8 opacity-40" />
+                      </div>
+                    )}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-                      <PlayCircle className="h-12 w-12 text-white" />
+                      <PlayCircle className="h-12 w-12 text-primary drop-shadow-lg" />
                     </div>
                   </div>
 

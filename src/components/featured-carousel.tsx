@@ -7,25 +7,22 @@ import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
 import { WatchButton } from "@/components/watch-button";
 import { WatchlistButton } from "@/components/watchlist/watchlist-button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Calendar, Film } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Media } from "@/types/anilistGraphQLTypes";
 
-
 export function FeaturedCarousel({ items }: { items: Media[] }) {
-
-  const filteredItems = items.filter(
-    (anime) => anime.bannerImage
+  // Use bannerImage or coverImage as fallback
+  const validItems = (items || []).filter(
+    (anime) => anime && (anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large)
   );
-  
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
-    duration: 30,
+    duration: 35,
     skipSnaps: false,
   });
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
-  const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
@@ -33,8 +30,6 @@ export function FeaturedCarousel({ items }: { items: Media[] }) {
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
     setSelectedIndex(emblaApi.selectedScrollSnap());
-    setPrevBtnDisabled(!emblaApi.canScrollPrev());
-    setNextBtnDisabled(!emblaApi.canScrollNext());
   }, [emblaApi]);
 
   useEffect(() => {
@@ -43,14 +38,13 @@ export function FeaturedCarousel({ items }: { items: Media[] }) {
     emblaApi.on("select", onSelect);
     emblaApi.on("reInit", onSelect);
 
-    // Auto-play functionality
     const autoplayInterval = setInterval(() => {
       if (emblaApi.canScrollNext()) {
         emblaApi.scrollNext();
       } else {
-        emblaApi.scrollTo(0); // Reset to first slide
+        emblaApi.scrollTo(0);
       }
-    }, 6000); // Change slide every 6 seconds
+    }, 7000);
 
     return () => {
       clearInterval(autoplayInterval);
@@ -59,103 +53,136 @@ export function FeaturedCarousel({ items }: { items: Media[] }) {
     };
   }, [emblaApi, onSelect]);
 
+  if (!validItems.length) return null;
+
   return (
-    <div className="relative group h-screen">
-      <div className="overflow-hidden h-full" ref={emblaRef}>
+    <div className="relative group w-full h-[62vh] min-h-[460px] max-h-[680px] sm:h-[72vh] overflow-hidden bg-background">
+      <div className="h-full w-full" ref={emblaRef}>
         <div className="flex h-full">
-          {filteredItems.map((anime) => (
-            <div
-              key={anime.id}
-              className="relative h-screen min-w-full flex-[0_0_100%]"
-            >
-              <div className="absolute inset-0">
-                <Image
-                  src={anime.bannerImage || anime.coverImage?.large || ""}
-                  alt={anime.title?.english || anime.title?.romaji || ""}
-                  fill
-                  className="object-cover brightness-[0.7] transition-all duration-500"
-                  priority
-                />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-              <div className="container relative flex h-full items-center pb-24">
-                <div className="max-w-3xl space-y-4 px-4 sm:px-6 lg:px-8">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2">
+          {validItems.map((anime, index) => {
+            const title = anime.title?.english || anime.title?.romaji || anime.title?.userPreferred || "Featured Anime";
+            const backdropImg = anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large || "";
+            const cleanDesc = anime.description ? anime.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "";
+            const score = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : null;
+
+            return (
+              <div
+                key={anime.id}
+                className="relative h-full min-w-full flex-[0_0_100%] overflow-hidden"
+              >
+                {/* Background Image */}
+                <div className="absolute inset-0">
+                  <Image
+                    src={backdropImg}
+                    alt={title}
+                    fill
+                    className="object-cover object-center brightness-[0.55] transition-transform duration-700 ease-out"
+                    priority={index === 0}
+                    sizes="100vw"
+                  />
+                </div>
+
+                {/* Multi-layer Gradient for text contrast */}
+                <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/40" />
+
+                {/* Content Container */}
+                <div className="container relative h-full flex flex-col justify-end pb-12 sm:pb-16 pt-20">
+                  <div className="max-w-2xl space-y-4">
+                    {/* Badges */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {anime.format && (
+                        <span className="px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-md bg-primary text-primary-foreground shadow-sm">
+                          {anime.format.replace("_", " ")}
+                        </span>
+                      )}
+                      {score && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 text-xs font-bold rounded-md bg-black/60 backdrop-blur-md text-amber-400 border border-amber-500/20">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          {score}
+                        </span>
+                      )}
                       {anime.genres?.slice(0, 3).map((genre) => (
-                        <Badge key={genre} variant="secondary">
+                        <Badge key={genre} variant="secondary" className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border-0 text-xs">
                           {genre}
                         </Badge>
                       ))}
                     </div>
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-                      {anime.title?.english || anime.title?.romaji}
-                    </h1>
-                  </div>
-                  
-                  <p className="line-clamp-2 sm:line-clamp-3 text-base sm:text-lg text-muted-foreground">
-                    {anime.description?.replace(/<[^>]*>/g, "")}
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-3">
-                    <WatchButton anime={anime} size="lg" />
-                    <WatchlistButton anime={anime} size="lg" variant="secondary" />
-                  </div>
 
-                  <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                    {anime.episodes && (
-                      <div>{anime.episodes} Episodes</div>
+                    {/* Headline Title */}
+                    <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
+                      {title}
+                    </h1>
+
+                    {/* Description */}
+                    {cleanDesc && (
+                      <p className="line-clamp-2 sm:line-clamp-3 text-sm sm:text-base text-gray-300 max-w-xl leading-relaxed">
+                        {cleanDesc}
+                      </p>
                     )}
-                    {anime.duration && (
-                      <div>{anime.duration} Min/Ep</div>
-                    )}
-                    {anime.averageScore && (
-                      <div>Score: {(anime.averageScore / 10).toFixed(1)}</div>
-                    )}
-                    {anime.season && anime.seasonYear && (
-                      <div>{`${anime.season.charAt(0) + anime.season.slice(1).toLowerCase()} ${anime.seasonYear}`}</div>
-                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-3 pt-2">
+                      <WatchButton anime={anime} size="lg" />
+                      <WatchlistButton anime={anime} size="lg" variant="secondary" />
+                    </div>
+
+                    {/* Metadata Footer */}
+                    <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-400 pt-1">
+                      {anime.episodes && (
+                        <span className="flex items-center gap-1">
+                          <Film className="h-3.5 w-3.5 text-primary" />
+                          {anime.episodes} Episodes
+                        </span>
+                      )}
+                      {anime.season && anime.seasonYear && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5 text-primary" />
+                          {`${anime.season.charAt(0) + anime.season.slice(1).toLowerCase()} ${anime.seasonYear}`}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      <div className="absolute left-2 right-2 sm:left-4 sm:right-4 top-1/2 flex -translate-y-1/2 justify-between z-20">
-  <Button
-    variant="ghost"
-    size="icon"
-    className="h-8 w-8 sm:h-12 sm:w-12 rounded-full bg-background/50 hover:bg-background/70 transition-all duration-200 backdrop-blur-sm"
-    onClick={scrollPrev}
-    disabled={prevBtnDisabled}
-  >
-    <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
-    <span className="sr-only">Previous slide</span>
-  </Button>
-  <Button
-    variant="ghost"
-    size="icon"
-    className="h-8 w-8 sm:h-12 sm:w-12 rounded-full bg-background/50 hover:bg-background/70 transition-all duration-200 backdrop-blur-sm"
-    onClick={scrollNext}
-    disabled={nextBtnDisabled}
-  >
-    <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
-    <span className="sr-only">Next slide</span>
-  </Button>
-</div>
+      {/* Prev / Next Controls */}
+      <div className="hidden sm:flex absolute right-6 bottom-10 z-20 gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 rounded-full border-white/15 bg-black/40 backdrop-blur-md text-white hover:bg-white/20 transition-all shadow-lg"
+          onClick={scrollPrev}
+          aria-label="Previous featured anime"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 rounded-full border-white/15 bg-black/40 backdrop-blur-md text-white hover:bg-white/20 transition-all shadow-lg"
+          onClick={scrollNext}
+          aria-label="Next featured anime"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
 
-      <div className="absolute bottom-4 sm:bottom-8 left-1/2 flex -translate-x-1/2 gap-1.5 sm:gap-2">
-        {filteredItems.map((_, index) => (
+      {/* Slide Dots */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+        {validItems.map((_, index) => (
           <button
             key={index}
             onClick={() => emblaApi?.scrollTo(index)}
-            className={`h-1.5 sm:h-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            className={`transition-all duration-300 rounded-full ${
               selectedIndex === index
-                ? "bg-primary w-6 sm:w-8"
-                : "w-1.5 sm:w-2 bg-primary/30 hover:bg-primary/50"
-            } rounded-full`}
+                ? "bg-primary w-8 h-2"
+                : "bg-white/30 hover:bg-white/60 w-2 h-2"
+            }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}

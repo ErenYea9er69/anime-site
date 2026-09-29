@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Flame, Sparkles, SlidersHorizontal, Film } from "lucide-react";
 import type { Anime } from "@/lib/anilist";
 import { searchAnime } from "@/lib/actions";
 
@@ -29,56 +29,35 @@ export function SearchCommand() {
   const [results, setResults] = useState<Anime[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Global keyboard shortcut: Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const performSearch = useCallback(async (q: string) => {
-    if (q.length >= 2) {
+    if (q.trim().length >= 2) {
       setIsLoading(true);
       try {
-        const data = await searchAnime(q);
-        setResults(data.slice(0, 5)); // Update results here directly
+        const data = await searchAnime(q.trim());
+        setResults((data || []).slice(0, 6));
       } catch (error) {
         console.error("Error searching anime:", error);
-        setResults([]); // Clear results on error
+        setResults([]);
       } finally {
         setIsLoading(false);
       }
     } else {
-      setResults([]); // Clear results if query is too short
+      setResults([]);
     }
   }, []);
-
-
-  // useEffect(() => {
-  //   const searchParams = new URLSearchParams(window.location.search);
-  //   const initialQuery = searchParams.get('q') || '';
-  
-  //   if (initialQuery) {
-  //     setQuery(initialQuery);
-  //     performSearch(initialQuery); // Immediately perform the search
-  //     setOpen(true); // Open the dialog with results
-  //   }
-  // }, [performSearch]); 
-  
-
-  // useEffect(() => {
-  //   performSearch(query); // Perform search whenever 'query' changes
-
-  //   // Update URL with the search query 
-  //   const searchParams = new URLSearchParams();
-  //   if (query) {
-  //     searchParams.set('q', query);
-  //   }
-  //   const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
-  //   window.history.pushState({}, '', newUrl);
-
-  //   const handlePopState = () => {
-  //     const params = new URLSearchParams(window.location.search);
-  //     const q = params.get('q') || '';
-  //     setQuery(q); // Sync query with URL on back/forward navigation
-  //   };
-  //   window.addEventListener('popstate', handlePopState);
-  //   return () => window.removeEventListener('popstate', handlePopState);
-
-  // }, [query, performSearch]); // Add performSearch to dependencies
 
   const handleSelect = (path: string) => {
     setOpen(false);
@@ -87,105 +66,103 @@ export function SearchCommand() {
 
   return (
     <>
-     <Button
+      <Button
         variant="outline"
-        className="relative h-9 w-9 p-0 xl:h-10 xl:w-60 xl:justify-start xl:px-3 xl:py-2"
+        className="relative h-9 w-9 p-0 md:h-9 md:w-52 lg:w-64 md:justify-start md:px-3 md:py-2 rounded-lg border-white/10 bg-background/50 hover:bg-background/80 transition-all text-muted-foreground hover:text-foreground"
         onClick={() => {
           setOpen(true);
-          performSearch(query);
+          if (query) performSearch(query);
         }}
+        aria-label="Open search dialog"
       >
-        <Search className="h-4 w-4 xl:mr-2" />
-        <span className="hidden xl:inline-flex">Search anime...</span>
-        <span className="sr-only">Search anime</span>
-        <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 xl:flex">
-          <span className="text-xs">⌘</span>K
+        <Search className="h-4 w-4 md:mr-2 shrink-0" />
+        <span className="hidden md:inline-flex text-xs font-normal">Search anime...</span>
+        <kbd className="pointer-events-none absolute right-2 top-1.5 hidden h-5 select-none items-center gap-0.5 rounded border border-white/10 bg-muted px-1.5 font-mono text-[10px] font-medium opacity-80 md:flex">
+          <span className="text-[11px]">⌘</span>K
         </kbd>
       </Button>
+
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="overflow-hidden p-0">
+        <DialogContent className="overflow-hidden p-0 border border-white/10 bg-background/95 backdrop-blur-xl max-w-xl shadow-2xl">
           <DialogTitle className="sr-only">Search Anime</DialogTitle>
-          <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
-          <CommandInput 
-            placeholder="Search anime..." 
-            value={query}
-            onValueChange={(newValue) => {
-              setQuery(newValue);
-              if (newValue.length >= 2) {
-                setIsLoading(true);
-                searchAnime(newValue)
-                  .then(data => {
-                    setResults(data.slice(0, 5));
-                  })
-                  .catch(error => {
-                    console.error("Error searching anime:", error);
-                    setResults([]);
-                  })
-                  .finally(() => {
-                    setIsLoading(false);
-                  });
-              } else {
-                setResults([]);
-              }
-            }}
-          />
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
+          <Command className="bg-transparent [&_[cmdk-input]]:h-12">
+            <div className="flex items-center border-b border-white/10 px-3">
+              <Search className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+              <CommandInput
+                placeholder="Search by title, character, or studio..."
+                value={query}
+                onValueChange={(val) => {
+                  setQuery(val);
+                  performSearch(val);
+                }}
+                className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <CommandList className="max-h-[360px] overflow-y-auto p-2">
+              <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+                {isLoading ? "Searching..." : "No anime found. Try another query."}
+              </CommandEmpty>
+
               {isLoading && (
-                <CommandLoading>Searching...</CommandLoading>
+                <CommandLoading className="py-2 text-center text-xs text-muted-foreground">
+                  Searching anime database...
+                </CommandLoading>
               )}
+
               {results.length > 0 && (
-                <CommandGroup heading="Search Results">
+                <CommandGroup heading="Results" className="text-xs text-muted-foreground">
                   {results.map((anime) => (
                     <CommandItem
                       key={anime.id}
                       onSelect={() => handleSelect(`/anime/${anime.id}`)}
-                      className="flex items-center gap-2 p-2"
+                      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors"
                     >
-                      <div className="relative h-16 w-12 flex-none overflow-hidden rounded-sm">
+                      <div className="relative h-12 w-9 flex-none overflow-hidden rounded bg-muted">
                         <Image
-                          src={anime.coverImage.medium}
-                          alt={anime.title.english || anime.title.romaji}
+                          src={anime.coverImage?.medium || anime.coverImage?.large || ""}
+                          alt={anime.title?.english || anime.title?.romaji || "Anime"}
                           fill
                           className="object-cover"
                         />
                       </div>
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="truncate font-medium">
-                          {anime.title.english || anime.title.romaji}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="truncate text-sm font-medium text-foreground">
+                          {anime.title?.english || anime.title?.romaji}
                         </span>
-                        <span className="text-sm text-muted-foreground">
-                          {anime.episodes} Episodes • {anime.status}
-                        </span>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {anime.format && <span className="uppercase text-[10px] font-semibold">{anime.format}</span>}
+                          {anime.episodes && <span>• {anime.episodes} eps</span>}
+                          {anime.averageScore && (
+                            <span className="text-amber-400">★ {(anime.averageScore / 10).toFixed(1)}</span>
+                          )}
+                        </div>
                       </div>
                     </CommandItem>
                   ))}
                 </CommandGroup>
               )}
-              <CommandGroup heading="Quick Links">
+
+              <CommandGroup heading="Quick Navigation" className="text-xs text-muted-foreground mt-2 border-t border-white/5 pt-2">
                 <CommandItem
                   onSelect={() => handleSelect("/trending")}
-                  className="flex items-center gap-2 py-3"
+                  className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors text-sm"
                 >
-                  Trending Anime
+                  <Flame className="h-4 w-4 text-orange-400" />
+                  <span>Trending Anime</span>
                 </CommandItem>
                 <CommandItem
                   onSelect={() => handleSelect("/popular")}
-                  className="flex items-center gap-2 py-3"
+                  className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors text-sm"
                 >
-                  Popular This Season
+                  <Sparkles className="h-4 w-4 text-yellow-400" />
+                  <span>Popular This Season</span>
                 </CommandItem>
                 <CommandItem
-                  onSelect={() => handleSelect("/library")}
-                  className="flex items-center gap-2 py-3"
+                  onSelect={() => handleSelect(`/search${query ? `?q=${encodeURIComponent(query)}` : ""}`)}
+                  className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors text-sm"
                 >
-                  My Library
-                </CommandItem>
-                <CommandItem
-                  onSelect={() => handleSelect("/search")}
-                  className="flex items-center gap-2 py-3 border-t"
-                >
-                  Advanced Search
+                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                  <span>Advanced Search & Filters</span>
                 </CommandItem>
               </CommandGroup>
             </CommandList>

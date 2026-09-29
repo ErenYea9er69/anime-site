@@ -20,7 +20,6 @@ import { Checkbox } from "@radix-ui/react-checkbox";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 import { 
   TableIcon, 
-  Badge, 
   Settings, 
   Clock, 
   Star, 
@@ -28,6 +27,7 @@ import {
   CheckCircle2,
   Filter
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";

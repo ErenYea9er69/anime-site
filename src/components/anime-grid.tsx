@@ -1,44 +1,38 @@
-import Link from "next/link";
-import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
 import { Media } from "@/types/anilistGraphQLTypes";
+import { AnimeCard } from "@/components/anime-card";
 
-export function AnimeGrid({ anime }: { anime: Media[] }) {
+interface AnimeGridProps {
+  anime: Media[];
+}
+
+export function AnimeGrid({ anime }: AnimeGridProps) {
   // Filter out duplicates based on ID
-  const uniqueAnime = anime.reduce((acc: Media[], current) => {
+  const uniqueAnime = (anime || []).reduce((acc: Media[], current) => {
+    if (!current?.id) return acc;
     const exists = acc.find(item => item.id === current.id);
-    if (!exists && current.id) {
+    if (!exists) {
       acc.push(current);
     }
     return acc;
   }, []);
+
+  if (!uniqueAnime.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+        <p className="text-base">No anime titles found.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex gap-4">
-      {uniqueAnime.map((item) => (
-        <Link 
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
+      {uniqueAnime.map((item, index) => (
+        <AnimeCard 
           key={item.id} 
-          href={`/anime/${item.id}`}
-          className="flex-none w-[200px] transition-transform hover:scale-[1.02]"
-        >
-          <Card className="h-full overflow-hidden">
-            <div className="aspect-[3/4] relative">
-              <Image
-                src={item.coverImage?.large || ''}
-                alt={item.title?.english || item.title?.romaji || ""}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <CardContent className="p-4">
-              <h2 className="font-semibold line-clamp-1">
-                {item.title?.english || item.title?.romaji}
-              </h2>
-              <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                {item.description?.replace(/<[^>]*>/g, "")}
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}    </div>
+          anime={item} 
+          priority={index < 6}
+        />
+      ))}
+    </div>
   );
 }

@@ -4,48 +4,70 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 326.1 100% 50%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 326.1 100% 95%;
-    --accent-foreground: 326.1 100% 40%;
-    --destructive: 0 84.2% 60.2%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 5.5%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 5.5%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 330 90% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 6% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 6% 12%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 330 90% 20%;
+    --accent-foreground: 330 100% 75%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 326.1 100% 50%;
+    --border: 240 6% 14%;
+    --input: 240 6% 14%;
+    --ring: 330 90% 55%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
+    --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 240 10% 5.5%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 240 10% 5.5%;
     --popover-foreground: 0 0% 98%;
-    --primary: 326.1 100% 50%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 14.9%;
+    --primary: 330 90% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 6% 12%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 326.1 100% 15%;
-    --accent-foreground: 326.1 100% 60%;
-    --destructive: 0 62.8% 30.6%;
+    --muted: 240 6% 12%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 330 90% 20%;
+    --accent-foreground: 330 100% 75%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 326.1 100% 50%;
+    --border: 240 6% 14%;
+    --input: 240 6% 14%;
+    --ring: 330 90% 55%;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 99%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 330 90% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 5% 94%;
+    --secondary-foreground: 240 6% 10%;
+    --muted: 240 5% 94%;
+    --muted-foreground: 240 4% 45%;
+    --accent: 330 90% 95%;
+    --accent-foreground: 330 90% 45%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 330 90% 50%;
   }
 }
 
@@ -54,14 +76,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
-
 @layer components {
   .container {
-    @apply px-4 md:px-8 lg:px-16 max-w-screen-2xl mx-auto;
+    @apply px-4 sm:px-6 md:px-8 max-w-7xl mx-auto;
   }
 
   .flex-center {
@@ -80,27 +101,11 @@
 
 /* Glass effects */
 .glass {
-  @apply bg-background/80 backdrop-blur-md;
+  @apply bg-background/80 backdrop-blur-md border border-white/10;
 }
 
 .glass-hover {
-  @apply hover:bg-background/90;
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-
-/* Hide scrollbar but keep functionality */
-.overflow-x-auto {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.overflow-x-auto::-webkit-scrollbar {
-  display: none;
+  @apply hover:bg-background/90 transition-colors;
 }
 
 /* Smooth scrolling */
@@ -112,13 +117,11 @@ html {
   position: relative;
   width: 100%;
   background: black;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   overflow: hidden;
 }
 
 .theater-mode {
-  max-height: 84vh;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
+  max-width: 100% !important;
+  width: 100% !important;
 }
