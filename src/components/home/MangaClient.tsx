@@ -51,7 +51,7 @@ export default function MangaClient() {
   if (!currentlyReading?.length && !planToReadList?.length) return null;
 
    return (
-    <section className="w-full mx-auto relative group">
+    <section className="w-full mx-auto relative">
       {currentlyReading?.length > 0 && (
         <>
           <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">

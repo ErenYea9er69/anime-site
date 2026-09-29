@@ -40,7 +40,7 @@ export default function PlanToWatchClient() {
   if (!plannedAnime.length) return null;
 
   return (
-    <section className="w-full mx-auto relative group">
+    <section className="w-full mx-auto relative">
       <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <h2 className="text-2xl sm:text-3xl font-bold">Plan To Watch</h2>
         <div className="flex gap-2">

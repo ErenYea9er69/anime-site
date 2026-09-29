@@ -54,7 +54,7 @@ export function AnimeSection({ title, anime }: AnimeSectionProps) {
   if (!uniqueAnime.length) return null;
 
   return (
-    <section className="w-full relative group">
+    <section className="w-full relative">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="h-6 w-1 rounded-full bg-primary" />

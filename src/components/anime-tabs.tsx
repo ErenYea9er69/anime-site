@@ -78,7 +78,7 @@ export function AnimeTabs({ anime }: AnimeTabsProps) {
   
 
   return (
-    <section className="w-full mx-auto relative group">
+    <section className="w-full mx-auto relative">
       <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         {relatedAnime.length > 0 ? (
           <DropdownMenu>
