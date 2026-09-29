@@ -13,7 +13,7 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Tsune - Modern Anime Streaming',
+  title: 'Monu - Modern Anime Streaming',
   description: 'Ad-free anime discovery and streaming experience with rich catalogs, personalized tracking, and modern UI.',
   icons: {
     icon: '/favicon.png',

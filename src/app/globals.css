@@ -10,20 +10,23 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 5.5%;
     --popover-foreground: 0 0% 98%;
-    --primary: 330 90% 55%;
+    --primary: 217 95% 58%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 6% 12%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 6% 12%;
     --muted-foreground: 240 5% 65%;
-    --accent: 330 90% 20%;
-    --accent-foreground: 330 100% 75%;
+    --accent: 217 90% 16%;
+    --accent-foreground: 214 100% 74%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 6% 14%;
     --input: 240 6% 14%;
-    --ring: 330 90% 55%;
+    --ring: 217 95% 58%;
     --radius: 0.75rem;
+
+    /* Vidstack Video Player Accent */
+    --media-brand: hsl(217 95% 58%);
   }
 
   .dark {
@@ -33,19 +36,21 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 5.5%;
     --popover-foreground: 0 0% 98%;
-    --primary: 330 90% 55%;
+    --primary: 217 95% 58%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 6% 12%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 6% 12%;
     --muted-foreground: 240 5% 65%;
-    --accent: 330 90% 20%;
-    --accent-foreground: 330 100% 75%;
+    --accent: 217 90% 16%;
+    --accent-foreground: 214 100% 74%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 6% 14%;
     --input: 240 6% 14%;
-    --ring: 330 90% 55%;
+    --ring: 217 95% 58%;
+
+    --media-brand: hsl(217 95% 58%);
   }
 
   .light {
@@ -55,19 +60,21 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 330 90% 50%;
+    --primary: 217 95% 52%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 5% 94%;
     --secondary-foreground: 240 6% 10%;
     --muted: 240 5% 94%;
     --muted-foreground: 240 4% 45%;
-    --accent: 330 90% 95%;
-    --accent-foreground: 330 90% 45%;
+    --accent: 214 95% 94%;
+    --accent-foreground: 217 95% 45%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 330 90% 50%;
+    --ring: 217 95% 52%;
+
+    --media-brand: hsl(217 95% 52%);
   }
 }
 

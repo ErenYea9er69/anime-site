@@ -85,11 +85,11 @@ export function Navbar() {
           </Button>
 
           <Link href="/" prefetch={true} className="flex items-center gap-2 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-pink-500 flex items-center justify-center shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-cyan-400 flex items-center justify-center shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
               <PlayCircle className="h-5 w-5 text-white" />
             </div>
             <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
-              Tsune
+              Monu
             </span>
           </Link>
 

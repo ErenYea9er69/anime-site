@@ -48,7 +48,7 @@ export function WatchPageContent({
 
   // Set document title
   useEffect(() => {
-    document.title = `${title} - Episode ${episodeNumber} | Tsune`;
+    document.title = `${title} - Episode ${episodeNumber} | Monu`;
   }, [title, episodeNumber]);
 
   // Auto-scroll episode list to current active episode

@@ -96,7 +96,7 @@ export default function MyListClient({
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background/95 to-background/90">
       <Head>
-        <title>{user.name}&apos;s Profile - Tsune</title>
+        <title>{user.name}&apos;s Profile - Monu</title>
       </Head>
       <div className="relative">
         {user.bannerImage && (
