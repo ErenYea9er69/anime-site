@@ -84,13 +84,14 @@ export function Navbar() {
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <Link href="/" prefetch={true} className="flex items-center gap-2.5 group">
-            <div className="relative h-9 w-9 rounded-xl overflow-hidden shadow-md shadow-primary/25 border border-white/10 group-hover:scale-105 group-hover:border-primary/50 transition-all duration-300">
+          <Link href="/" prefetch={true} className="flex items-center gap-2 group">
+            <div className="relative h-9 w-9 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
               <Image
                 src="/logo.png"
                 alt="Monu"
-                fill
-                className="object-cover"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(34,124,255,0.4)] group-hover:drop-shadow-[0_4px_16px_rgba(34,197,255,0.7)] transition-all duration-300"
                 priority
               />
             </div>
