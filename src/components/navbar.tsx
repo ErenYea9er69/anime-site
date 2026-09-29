@@ -84,9 +84,15 @@ export function Navbar() {
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <Link href="/" prefetch={true} className="flex items-center gap-2 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-cyan-400 flex items-center justify-center shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
-              <PlayCircle className="h-5 w-5 text-white" />
+          <Link href="/" prefetch={true} className="flex items-center gap-2.5 group">
+            <div className="relative h-9 w-9 rounded-xl overflow-hidden shadow-md shadow-primary/25 border border-white/10 group-hover:scale-105 group-hover:border-primary/50 transition-all duration-300">
+              <Image
+                src="/logo.png"
+                alt="Monu"
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
             <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
               Monu
