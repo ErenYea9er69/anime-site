@@ -24,8 +24,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getAniZipData, AniZipData, AniZipEpisode } from "@/services/streaming";
+import { NextEpisodeInfo } from "@/components/video-player";
 
 interface WatchPageContentProps {
   anime: Media;
@@ -45,10 +47,34 @@ export function WatchPageContent({
   const [aniZipData, setAniZipData] = useState<AniZipData | null>(null);
   const activeEpisodeRef = useRef<HTMLAnchorElement>(null);
 
+  const router = useRouter();
   const title = anime.title?.english || anime.title?.romaji || anime.title?.userPreferred || "Anime Episode";
   const totalEpisodes = anime.episodes || 1;
   const hasPrev = episodeNumber > 1;
   const hasNext = episodeNumber < totalEpisodes;
+
+  const nextEpNumber = episodeNumber + 1;
+  const nextEpData: AniZipEpisode | undefined = aniZipData?.episodes?.[nextEpNumber.toString()];
+  const nextEpInfo: NextEpisodeInfo | null = hasNext
+    ? {
+        episodeNumber: nextEpNumber,
+        title: nextEpData?.title?.en || nextEpData?.title?.["x-jat"] || `Episode ${nextEpNumber}`,
+        thumbnail: nextEpData?.image || anime.bannerImage || anime.coverImage?.large,
+        overview: nextEpData?.overview || nextEpData?.summary,
+      }
+    : null;
+
+  const handleNextEpisode = () => {
+    if (hasNext) {
+      router.push(`/watch/${animeId}/${nextEpNumber}`);
+    }
+  };
+
+  const handlePrevEpisode = () => {
+    if (hasPrev) {
+      router.push(`/watch/${animeId}/${episodeNumber - 1}`);
+    }
+  };
 
   // Load AniZip cross-database episode metadata
   useEffect(() => {
@@ -144,6 +170,9 @@ export function WatchPageContent({
             progress: undefined,
             media: anime,
           }}
+          nextEpisode={nextEpInfo}
+          onNextEpisode={handleNextEpisode}
+          onPrevEpisode={handlePrevEpisode}
         />
 
         {/* Quick Nav & Controls Beneath Player */}

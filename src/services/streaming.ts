@@ -49,6 +49,18 @@ export interface AniZipData {
   specialCount?: number;
 }
 
+export interface SkipTimeInterval {
+  startTime: number;
+  endTime: number;
+}
+
+export interface EpisodeSkipTimes {
+  op?: SkipTimeInterval;
+  ed?: SkipTimeInterval;
+  recap?: SkipTimeInterval;
+  episodeLength?: number;
+}
+
 export interface StreamServer {
   id: string;
   name: string;
@@ -78,6 +90,86 @@ export interface StreamResolution {
 const aniZipCache = new Map<number, AniZipData>();
 // In-memory cache for TMDB ID lookups
 const tmdbLookupCache = new Map<number, string>();
+// In-memory cache for AniSkip skip times
+const skipTimesCache = new Map<string, EpisodeSkipTimes>();
+
+/**
+ * Fetches episode opening and ending skip times from AniSkip API
+ */
+export async function getEpisodeSkipTimes(
+  malId: number | string,
+  episodeNumber: number
+): Promise<EpisodeSkipTimes | null> {
+  const id = typeof malId === "string" ? parseInt(malId, 10) : malId;
+  if (!id || isNaN(id) || episodeNumber < 1) return null;
+
+  const cacheKey = `${id}_${episodeNumber}`;
+  if (skipTimesCache.has(cacheKey)) {
+    return skipTimesCache.get(cacheKey)!;
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const stored = sessionStorage.getItem(`aniskip_${cacheKey}`);
+      if (stored) {
+        const parsed = JSON.parse(stored) as EpisodeSkipTimes;
+        skipTimesCache.set(cacheKey, parsed);
+        return parsed;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const url = `https://api.aniskip.com/v2/skip-times/${id}/${episodeNumber}?types=op&types=ed&types=mixed-op&types=mixed-ed&types=recap&episodeLength=0`;
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (!data.found || !Array.isArray(data.results)) return null;
+
+    const result: EpisodeSkipTimes = {};
+
+    for (const item of data.results) {
+      if (!item.interval) continue;
+      const interval: SkipTimeInterval = {
+        startTime: Number(item.interval.startTime) || 0,
+        endTime: Number(item.interval.endTime) || 0,
+      };
+
+      if ((item.skipType === "op" || item.skipType === "mixed-op") && !result.op) {
+        result.op = interval;
+        if (item.episodeLength) result.episodeLength = item.episodeLength;
+      } else if ((item.skipType === "ed" || item.skipType === "mixed-ed") && !result.ed) {
+        result.ed = interval;
+        if (item.episodeLength && !result.episodeLength) result.episodeLength = item.episodeLength;
+      } else if (item.skipType === "recap" && !result.recap) {
+        result.recap = interval;
+      }
+    }
+
+    skipTimesCache.set(cacheKey, result);
+
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(`aniskip_${cacheKey}`, JSON.stringify(result));
+      } catch {
+        // ignore
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.warn("AniSkip fetch skipped or timed out:", error);
+    return null;
+  }
+}
 
 /**
  * Fetches cross-database mappings and episode metadata from AniZip (free community database)
@@ -235,8 +327,8 @@ export async function resolveStreamServers(
   // Server 1: VidLink HD (Fast, Full HD player, sub/dub options)
   if (tmdbId) {
     const vidlinkUrl = isMovie
-      ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=6366f1&secondaryColor=18181b&icons=vid`
-      : `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${episodeInSeason}?primaryColor=6366f1&secondaryColor=18181b&icons=vid`;
+      ? `https://vidlink.pro/movie/${tmdbId}?primaryColor=6366f1&secondaryColor=18181b&icons=vid&nextbutton=true`
+      : `https://vidlink.pro/tv/${tmdbId}/${seasonNumber}/${episodeInSeason}?primaryColor=6366f1&secondaryColor=18181b&icons=vid&nextbutton=true`;
 
     servers.push({
       id: "vidlink",
@@ -251,7 +343,7 @@ export async function resolveStreamServers(
       id: "vidlink",
       name: "VidLink HD",
       type: "embed",
-      url: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=6366f1`,
+      url: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true&primaryColor=6366f1&icons=vid&nextbutton=true`,
       badge: "Recommended",
       description: "Fast 1080p Anime Player",
     });

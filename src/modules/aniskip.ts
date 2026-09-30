@@ -1,4 +1,3 @@
-import { skip } from "node:test";
 import { SkipEvent, SkipEventTypes } from "../types/aniskipTypes";
 import { makeRequest } from "./requests";
 
