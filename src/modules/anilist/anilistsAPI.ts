@@ -805,7 +805,7 @@ export const getTrendingAnimeSlim = async (
                   currentPage
                   hasNextPage
               }
-              media(sort: TRENDING_DESC, type: ANIME) {
+              media(sort: TRENDING_DESC, type: ANIME, status_not: NOT_YET_RELEASED, format_not: MUSIC) {
                   ${MEDIA_DATA_SLIM}
               }
           }
@@ -828,7 +828,7 @@ export const getMostPopularAnimeSlim = async (
                   currentPage
                   hasNextPage
               }
-              media(sort: POPULARITY_DESC, type: ANIME) {
+              media(sort: POPULARITY_DESC, type: ANIME, status_in: [RELEASING, FINISHED], format_not: MUSIC) {
                   ${MEDIA_DATA_SLIM}
               }
           }
@@ -838,6 +838,71 @@ export const getMostPopularAnimeSlim = async (
   const options = getOptions(query);
   const respData = await makeRequest(METHOD, GRAPH_QL_URL, HEADERS, options);
   return respData.data.Page;
+};
+
+export interface HomePageData {
+  trending: Media[];
+  popular: Media[];
+  topRated: Media[];
+  movies: Media[];
+  isekai: Media[];
+  adult: Media[];
+}
+
+export const getHomePageDataSlim = async (
+  season?: string,
+  seasonYear?: number
+): Promise<HomePageData> => {
+  const seasonFilter =
+    season && seasonYear
+      ? `, season: ${season}, seasonYear: ${seasonYear}, status: RELEASING`
+      : `, status_in: [RELEASING, FINISHED]`;
+
+  const query = `
+    query {
+      trending: Page(page: 1, perPage: 32) {
+        media(sort: TRENDING_DESC, type: ANIME, status_not: NOT_YET_RELEASED, format_not: MUSIC) {
+          ${MEDIA_DATA_SLIM}
+        }
+      }
+      popular: Page(page: 1, perPage: 32) {
+        media(type: ANIME, sort: POPULARITY_DESC ${seasonFilter}, format_not: MUSIC) {
+          ${MEDIA_DATA_SLIM}
+        }
+      }
+      topRated: Page(page: 1, perPage: 32) {
+        media(sort: SCORE_DESC, type: ANIME, status_not: NOT_YET_RELEASED, format_not: MUSIC) {
+          ${MEDIA_DATA_SLIM}
+        }
+      }
+      movies: Page(page: 1, perPage: 28) {
+        media(type: ANIME, format: MOVIE, sort: POPULARITY_DESC, status_not: NOT_YET_RELEASED) {
+          ${MEDIA_DATA_SLIM}
+        }
+      }
+      isekai: Page(page: 1, perPage: 28) {
+        media(type: ANIME, tag_in: ["Isekai"], sort: POPULARITY_DESC, status_not: NOT_YET_RELEASED, format_not: MUSIC) {
+          ${MEDIA_DATA_SLIM}
+        }
+      }
+      adult: Page(page: 1, perPage: 28) {
+        media(type: ANIME, genre_in: ["Hentai"], sort: POPULARITY_DESC, status_not: NOT_YET_RELEASED, format_not: MUSIC) {
+          ${MEDIA_DATA_SLIM}
+        }
+      }
+    }
+  `;
+
+  const options = getOptions(query);
+  const respData = await makeRequest(METHOD, GRAPH_QL_URL, HEADERS, options);
+  return {
+    trending: respData?.data?.trending?.media || [],
+    popular: respData?.data?.popular?.media || [],
+    topRated: respData?.data?.topRated?.media || [],
+    movies: respData?.data?.movies?.media || [],
+    isekai: respData?.data?.isekai?.media || [],
+    adult: respData?.data?.adult?.media || [],
+  };
 };
 
 export const searchFilteredAnimeSlim = async (

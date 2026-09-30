@@ -44,11 +44,18 @@ export function AnimeCard({ anime, priority = false }: AnimeCardProps) {
 
         {/* Top Badges */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none gap-1">
-          {format && (
-            <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-background/80 backdrop-blur-md text-foreground border border-white/10 shadow-sm">
-              {format}
-            </span>
-          )}
+          <div className="flex items-center gap-1">
+            {format && (
+              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-background/80 backdrop-blur-md text-foreground border border-white/10 shadow-sm">
+                {format}
+              </span>
+            )}
+            {(anime.isAdult || anime.genres?.some((g) => g.toLowerCase() === "hentai")) && (
+              <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md bg-pink-600/90 text-white border border-pink-400/30 shadow-sm shadow-pink-600/30">
+                18+
+              </span>
+            )}
+          </div>
           {score && (
             <span className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-bold rounded-md bg-black/70 backdrop-blur-md text-amber-400 border border-amber-500/20 shadow-sm">
               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />

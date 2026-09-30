@@ -1,4 +1,11 @@
-export const GENRES = [
+export interface CategoryItem {
+  value: string;
+  label: string;
+  type: 'genre' | 'tag';
+  isAdult?: boolean;
+}
+
+export const GENRES: Array<{ value: string; label: string; isAdult?: boolean }> = [
   { value: 'ALL', label: 'Any' },
   { value: 'Action', label: 'Action' },
   { value: 'Adventure', label: 'Adventure' },
@@ -6,6 +13,7 @@ export const GENRES = [
   { value: 'Drama', label: 'Drama' },
   { value: 'Ecchi', label: 'Ecchi' },
   { value: 'Fantasy', label: 'Fantasy' },
+  { value: 'Hentai', label: 'Hentai (18+)', isAdult: true },
   { value: 'Horror', label: 'Horror' },
   { value: 'Mahou Shoujo', label: 'Mahou Shoujo' },
   { value: 'Mecha', label: 'Mecha' },
@@ -18,6 +26,46 @@ export const GENRES = [
   { value: 'Sports', label: 'Sports' },
   { value: 'Supernatural', label: 'Supernatural' },
   { value: 'Thriller', label: 'Thriller' },
+];
+
+export const POPULAR_THEMES: Array<{ value: string; label: string; isAdult?: boolean }> = [
+  { value: 'Isekai', label: 'Isekai' },
+  { value: 'Shounen', label: 'Shounen' },
+  { value: 'Seinen', label: 'Seinen' },
+  { value: 'Shoujo', label: 'Shoujo' },
+  { value: 'Josei', label: 'Josei' },
+  { value: 'Super Power', label: 'Super Power' },
+  { value: 'Martial Arts', label: 'Martial Arts' },
+  { value: 'School', label: 'School' },
+  { value: 'Military', label: 'Military' },
+  { value: 'Demons', label: 'Demons' },
+  { value: 'Vampire', label: 'Vampire' },
+  { value: 'Historical', label: 'Historical' },
+  { value: 'Space', label: 'Space' },
+  { value: 'Cyberpunk', label: 'Cyberpunk' },
+  { value: 'Post-Apocalyptic', label: 'Post-Apocalyptic' },
+  { value: 'Survival', label: 'Survival' },
+  { value: 'Female Harem', label: 'Harem' },
+  { value: 'Yuri', label: 'Yuri' },
+  { value: "Boys' Love", label: "Boys' Love" },
+  { value: 'Gore', label: 'Gore' },
+  { value: 'Parody', label: 'Parody' },
+  { value: 'Work', label: 'Workplace' },
+];
+
+export const ALL_CATEGORIES: CategoryItem[] = [
+  ...GENRES.filter((g) => g.value !== 'ALL').map((g) => ({
+    value: g.value,
+    label: g.label,
+    type: 'genre' as const,
+    isAdult: g.isAdult,
+  })),
+  ...POPULAR_THEMES.map((t) => ({
+    value: t.value,
+    label: t.label,
+    type: 'tag' as const,
+    isAdult: t.isAdult,
+  })),
 ];
 
 export const SEASONS = [
@@ -36,7 +84,6 @@ export const FORMATS = [
   { value: 'SPECIAL', label: 'Special' },
   { value: 'OVA', label: 'OVA' },
   { value: 'ONA', label: 'ONA' },
-  { value: 'MUSIC', label: 'Music' },
 ];
 
 export const SORTS = [
@@ -44,4 +91,4 @@ export const SORTS = [
   { value: 'POPULARITY_DESC', label: 'Popularity' },
   { value: 'SCORE_DESC', label: 'Score' },
   { value: 'START_DATE_DESC', label: 'Release Date' },
-];
+];

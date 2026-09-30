@@ -1,12 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
 const KNOWN_TMDB_MAPPINGS: Record<string, string> = {
-  "113417": "95897", // Overflow
-  "10851": "85552",  // Euphoria
-  "320": "200753",   // Kite
-  "1639": "100412",  // Boku no Pico
-  "101374": "93782", // Yarichin Bitch-bu
+  "113417": "95897",  // Overflow
+  "10851": "85552",   // Euphoria
+  "320": "200753",    // Kite
+  "1639": "100412",   // Boku no Pico
+  "101374": "93782",  // Yarichin Bitch-bu
+  "21222": "1559416", // Mankitsu Happening
+  "101981": "81044",  // Joshi Ochi
+  "113042": "99071",  // Kaifuku Jutsushi no Yarinaoshi
+  "110270": "96444",  // Ishuzoku Reviewers
+  "8861": "68005",    // Yosuga no Sora
+  "118416": "103409", // Shuumatsu no Harem
+  "127090": "114477", // Isekai Meikyuu de Harem wo
+  "7088": "271607",   // Aki-Sora
 };
+
 
 function extractIds(html: string, pattern: RegExp): string[] {
   const ids: string[] = [];

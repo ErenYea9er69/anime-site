@@ -1,10 +1,12 @@
 export interface SearchFilters {
   query?: string;
   genres?: string[];
+  tags?: string[];
   seasons?: string[];
   year?: string;
   format?: string;
   sort?: string;
+  isAdult?: boolean;
 }
 
 export interface SearchState extends SearchFilters {
@@ -12,4 +14,4 @@ export interface SearchState extends SearchFilters {
   hasMore: boolean;
   isLoading: boolean;
   error: string | null;
-}
+}

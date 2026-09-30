@@ -1,6 +1,7 @@
 import { searchFilteredAnimeSlim } from "@/modules/anilist/anilistsAPI";
 import { AnimeGrid } from "@/components/anime-grid";
 import { getCurrentSeasonInfo } from "@/utils/season";
+import { filterSupportedAnime } from "@/utils/animeSupport";
 import { Sparkles } from "lucide-react";
 
 // ISR: cache for 5 minutes, then revalidate in the background
@@ -9,9 +10,11 @@ export const revalidate = 300;
 export default async function PopularPage() {
   const seasonInfo = getCurrentSeasonInfo();
   const data = await searchFilteredAnimeSlim(
-    `type: ANIME, sort: POPULARITY_DESC, season: ${seasonInfo.season}, seasonYear: ${seasonInfo.year}, status: RELEASING`
+    `type: ANIME, sort: POPULARITY_DESC, season: ${seasonInfo.season}, seasonYear: ${seasonInfo.year}, status: RELEASING, format_not: MUSIC`,
+    1,
+    50
   );
-  const anime = data?.media || [];
+  const anime = filterSupportedAnime(data?.media || []);
 
   return (
     <div className="container py-8 space-y-8">

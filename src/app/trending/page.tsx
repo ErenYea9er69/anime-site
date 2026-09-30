@@ -1,13 +1,14 @@
 import { getTrendingAnimeSlim } from "@/modules/anilist/anilistsAPI";
 import { AnimeGrid } from "@/components/anime-grid";
+import { filterSupportedAnime } from "@/utils/animeSupport";
 import { Flame } from "lucide-react";
 
 // ISR: cache for 5 minutes, then revalidate in the background
 export const revalidate = 300;
 
 export default async function TrendingPage() {
-  const data = await getTrendingAnimeSlim(48);
-  const anime = data?.media?.slice(0, 48) || [];
+  const data = await getTrendingAnimeSlim(50);
+  const anime = filterSupportedAnime(data?.media || []);
 
   return (
     <div className="container py-8 space-y-8">
@@ -22,7 +23,7 @@ export default async function TrendingPage() {
           </h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Updated continuously based on global viewer ratings and popularity
+          Streamable top trending anime, updated continuously based on global viewer ratings
         </p>
       </div>
 
